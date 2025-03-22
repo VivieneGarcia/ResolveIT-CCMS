@@ -2,6 +2,111 @@ import csv
 import datetime
 from typing import Dict, List
 
+class CSVManager:
+    @staticmethod
+    def load_users() -> Dict[str, 'User']:
+        users = {}
+        try:
+            with open('users.csv', 'r', newline='', encoding='utf-8') as file:
+                for row in csv.DictReader(file):
+                    user_id, role, username = int(row['user_id']), row['role'], row['username']
+                    if role == "Resident": users[username] = Resident(user_id, row['name'], row['email'], row['password'])
+                    elif role == "Administrator": users[username] = Administrator(user_id, row['name'], row['email'], row['password'])
+                    elif role == "Authority": users[username] = Authority(user_id, row['name'], row['email'], row['password'])
+        except FileNotFoundError: pass
+        return users
+
+
+    @staticmethod
+    def save_users(users: Dict[str, 'User']):
+        with open('users.csv', 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(['username', 'user_id', 'name', 'email', 'role', 'password'])
+            for username, user in users.items():
+                writer.writerow([username, user.get_user_id(), user.name, user.email, user.role, user._User__password])
+
+
+    @staticmethod
+    def load_complaints():
+        complaints = []
+        try:
+            with open('complaints.csv', 'r', newline='', encoding='utf-8') as file:
+                for row in csv.DictReader(file):
+                    complaints.append(Complaint(
+                        complaint_id=int(row['complaint_id']),
+                        user_id=int(row['user_id']),
+                        title=row['title'],
+                        category=row['category'],
+                        location=row['location'],
+                        description=row['description'],
+                        timestamp=datetime.datetime.fromisoformat(row['timestamp']),
+                        media=row['media'] or None,
+                        status=row['status'],
+                        assigned_authority_id=int(row['assigned_authority_id']) if row['assigned_authority_id'] else None
+                    ))
+        except FileNotFoundError: pass
+        return complaints
+
+
+    @staticmethod
+    def save_complaints(complaints: List['Complaint']):
+        with open('complaints.csv', 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(['complaint_id', 'user_id', 'title', 'category', 'location', 'description', 'media', 'status', 'timestamp', 'assigned_authority_id'])
+            for c in complaints:
+                writer.writerow([c.get_complaint_id(), c.get_user_id(), c.title, c.category, c.location, c.description,
+                                 c.media or '', c.status, c.timestamp.isoformat(), c.assigned_authority_id or ''])
+
+
+    @staticmethod
+    def load_notifications():
+        notifications = []
+        with open('notifications.csv', 'r') as file:
+            for row in csv.DictReader(file):
+                try: recipient_id = int(row['recipient_id'])
+                except ValueError: recipient_id = None
+                notifications.append({'sender_id': int(row['sender_id']), 'recipient_id': recipient_id,
+                                      'message': row['message'], 'timestamp': row['timestamp']})
+        return notifications
+
+
+    @staticmethod
+    def save_notification(notification: dict):
+        with open('notifications.csv', 'a', newline='', encoding='utf-8') as file:
+            csv.writer(file).writerow([notification['sender_id'], notification['recipient_id'],
+                                       notification['message'], notification['timestamp'].isoformat()])
+    @staticmethod
+    def update_complaint_in_csv(complaint):
+        csv_file = "complaints.csv"
+        complaints = []
+        updated = False
+
+
+        with open(csv_file, mode='r', newline='') as file:
+            reader = csv.DictReader(file)
+            fieldnames = reader.fieldnames
+
+
+            for row in reader:
+                if row["complaint_id"] == str(complaint.get_complaint_id()):
+                    row["status"] = complaint.status
+                    row["assigned_authority_id"] = complaint.assigned_authority_id or ""
+                    updated = True
+                complaints.append(row)
+
+
+        if updated:
+            with open(csv_file, mode='w', newline='') as file:
+                writer = csv.DictWriter(file, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(complaints)
+
+
+            print(f"✅ Complaint {complaint.get_complaint_id()} successfully assigned and updated in CSV.")
+        else:
+            print(f"❌ Complaint {complaint.get_complaint_id()} not found in CSV.")
+
+
 class User:
     def __init__(self, user_id: int, name: str, email: str, role: str, password: str):
         self.__user_id = user_id
