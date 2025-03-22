@@ -340,3 +340,34 @@ class Complaint:
 
     def get_user_id(self):
         return self.__user_id
+class NotificationManager:
+    notifications_db = CSVManager.load_notifications()
+    @classmethod
+    def send_notification(cls, sender_id: int, recipient_id: int, message: str):
+        notification = {
+            "sender_id": sender_id,
+            "recipient_id": recipient_id,
+            "message": message,
+            "timestamp": datetime.datetime.now()
+        }
+        cls.notifications_db.append(notification)
+        CSVManager.save_notification(notification)
+        print(f"🔔 Notification sent to user {recipient_id}")
+
+
+    @classmethod
+    def view_notifications(cls, user_id: int):
+        notifications = [n for n in cls.notifications_db if n['recipient_id'] == user_id]
+        if not notifications:
+            print("📭 No new notifications")
+            return
+        print("\n📨 Notifications:")
+        for idx, notif in enumerate(notifications, 1):
+            timestamp = notif['timestamp']
+            if isinstance(timestamp, str):
+                try:
+                    timestamp = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
+                except ValueError:
+                    print(f"⚠️ Invalid timestamp format: {timestamp}")
+                    continue
+            print(f"{idx}. [{timestamp.strftime('%m/%d %H:%M')}] {notif['message']}")
