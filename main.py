@@ -319,3 +319,24 @@ class Authority(User):
        
         if not found:
             print("📄 No complaints assigned to you.")
+
+class Complaint:
+    def __init__(self, complaint_id, user_id, title, category, location, description, media, status, timestamp, assigned_authority_id):
+        self.__complaint_id = complaint_id
+        self.__user_id = user_id
+        self.title = title
+        self.category = category
+        self.location = location
+        self.description = description
+        self.media = media
+        self.status = status
+        self.timestamp = timestamp
+        self.assigned_authority_id = assigned_authority_id
+
+
+    def get_complaint_id(self):
+        return self.__complaint_id  
+
+
+    def get_user_id(self):
+        return self.__user_id
