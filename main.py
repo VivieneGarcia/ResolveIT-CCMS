@@ -108,3 +108,55 @@ class Resident(User):
                 return user
         return None
 
+class Administrator(User):
+    def __init__(self, user_id, name, email, password):
+        super().__init__(user_id, name, email, "Administrator", password)
+
+
+    def assign_complaint(self, complaint, authority):
+        complaint.status = "Assigned"
+        complaint.assigned_authority_id = authority.get_user_id()
+        authority.assigned_complaints.append(complaint)
+
+
+        NotificationManager.send_notification(sender_id=user.get_user_id(), recipient_id=authority.get_user_id(),  
+        message=f"New complaint (ID: {complaint.get_complaint_id()}) assigned to you."
+   )
+
+        
+        NotificationManager.send_notification(sender_id=authority.get_user_id(), recipient_id=complaint.get_user_id(),
+            message=f"Your complaint (ID: {complaint.get_complaint_id()}) has been assigned to an authority."
+        )
+
+
+        CSVManager.update_complaint_in_csv(complaint)
+
+
+    def view_all_complaints(self):
+        print("\n📋 All Complaints:")
+        for comp in all_complaint:
+            assigned_authority_name = "Unassigned"
+            print(f"🔎 Checking assigned authority ID: {comp.assigned_authority_id}")  # Debug
+
+
+            if comp.assigned_authority_id:
+                assigned_authority = self.get_authority(comp.assigned_authority_id)
+                assigned_authority_name = assigned_authority.name if assigned_authority else "Unknown"
+
+
+            print("---------------------------------------------------------")
+            print(f"🆔 ID: {comp.get_complaint_id()} | User: {comp.get_user_id()}")
+            print(f"📝 Title: {comp.title}")
+            print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
+            print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
+            if comp.media:
+                print(f"🔗 Media: {comp.media}")
+            print(f"👮 Assigned Authority: {assigned_authority_name}")
+            print("---------------------------------------------------------")
+   
+    def get_authority(self, user_id):
+        for user in users_db.values():
+            if str(user.get_user_id()) == str(user_id):
+                return user
+        print("🚫 User not found.")
+        return None
