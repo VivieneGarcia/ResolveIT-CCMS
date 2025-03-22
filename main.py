@@ -371,3 +371,73 @@ class NotificationManager:
                     print(f"⚠️ Invalid timestamp format: {timestamp}")
                     continue
             print(f"{idx}. [{timestamp.strftime('%m/%d %H:%M')}] {notif['message']}")
+
+
+users_db = CSVManager.load_users()
+all_complaint = CSVManager.load_complaints()
+
+for user in users_db.values():
+    if isinstance(user, Resident):
+        user.complaints = [c for c in all_complaint if c.get_user_id() == user.get_user_id()]
+    if isinstance(user, Authority):
+        user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
+
+next_user_id = max((u.get_user_id() for u in users_db.values()), default=0) + 1
+next_complaint_id = max((c.get_complaint_id() for c in all_complaint), default=0) + 1
+
+def main():
+    global next_user_id, next_complaint_id
+    while True:
+        print("\n🏢 RESOLVEIT: Community Complaint Management System")
+        print("🔐 [1] Login")
+        print("📝 [2] Register")
+        print("❌ [3] Exit")
+        choice = input("\n👉 Enter choice: ").strip()
+
+        if choice == '1': handle_login()
+        elif choice == '2': handle_register()
+        elif choice == '3': break
+        else: print("❌ Invalid choice")
+
+def handle_login():
+    username = input("\n📝 Username: ").strip()
+    password = input("🔒 Password: ").strip()
+    
+    user = users_db.get(username)
+    if not user or not user.login(password):
+        print("❌ Login failed")
+        return
+    
+    if user.role == "Resident": resident_dashboard(user)
+    elif user.role == "Administrator": admin_dashboard(user)
+    else: authority_dashboard(user)
+
+def handle_register():
+    global next_user_id
+    print("\n🌟 New Registration")
+    username = input("📝 Username: ").strip()
+
+    if username in users_db:
+        print("❌ Username already exists. Registration failed.")
+        return
+
+    role = input("👤 Role (Resident/Administrator/Authority): ").strip().capitalize()
+    if role not in ["Resident", "Administrator", "Authority"]:
+        print("❌ Invalid role. Registration failed.")
+        return
+
+    user = User.register(next_user_id,username,
+        input("📛 Full Name: ").strip(),
+        input("📧 Email: ").strip(),role,
+        input("🔑 Password: ").strip(),
+        users_db
+    )
+    if user:
+        if isinstance(user, Resident):
+            user.complaints = [] d
+        if isinstance(user, Authority):
+            user.assigned_complaints = [] 
+        next_user_id += 1
+        print("✅ Registration successful!")
+        
+
