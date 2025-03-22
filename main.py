@@ -456,6 +456,52 @@ def resident_dashboard(user: Resident):
         elif choice == '4': NotificationManager.view_notifications(user.get_user_id())
         elif choice == '5': break
         else: print("❌ Invalid choice")
+
+def handle_submit_complaint(user: Resident):
+    global next_complaint_id
+    title = input("Enter title: ")
+    category = input("Enter complaint category: ")
+    location = input("Enter location: ")
+    description = input("Enter complaint description: ")
+    media = input("Provide any media link (optional): ") or None
+    timestamp = datetime.datetime.now()
+    assigned_authority_id = None  
+
+    complaint = Complaint(complaint_id=next_complaint_id,user_id=user.get_user_id(),title=title,category=category,
+        location=location,description=description,media=media,status="Submitted",timestamp=timestamp,
+        assigned_authority_id=assigned_authority_id)
+
+    user.submit_complaint(complaint)
+    next_complaint_id += 1
+    print("✅ Complaint submitted successfully!")
+
+def handle_edit_complaint(resident):
+    resident.view_complaints()
+    if not resident.complaints:
+        return
+    try:
+        comp_id = int(input("\n🆔 Enter complaint ID to edit: "))
+        complaint = next((c for c in resident.complaints if c.get_complaint_id() == comp_id), None)
+        
+        if not complaint:
+            print("\n❌ Complaint not found or you don't have permission!")
+            return
+        
+        # Check if the complaint is rejected or resolved
+        if complaint.status.lower() in ["rejected", "resolved"]:
+            print("❌ This complaint has been rejected or resolved and cannot be edited.")
+            return
+            
+        print("\n✏️ Edit Complaint (leave blank to keep current value)")
+        new_title = input(f"📝 New title ({complaint.title}): ") or complaint.title
+        new_category = input(f"🏷️ New category ({complaint.category}): ") or complaint.category
+        new_location = input(f"📍 New location ({complaint.location}): ") or complaint.location
+        new_description = input(f"📄 New description ({complaint.description}): ") or complaint.description
+        new_media = input(f"📷 New media ({complaint.media}): ") or complaint.media
+        
+        resident.edit_complaint(complaint, new_title, new_category, new_location, new_description, new_media)
+    except ValueError:
+        print("\n❌ Invalid complaint ID format!")
         
 def admin_dashboard(admin):
     while True:
@@ -473,6 +519,29 @@ def admin_dashboard(admin):
             admin.logout()
             break
         else:print("\n❌ Invalid choice. Please try again.")
+        
+def handle_assign_complaint(admin):
+    admin.view_all_complaints()
+    try:
+        comp_id = int(input("\n🆔 Enter complaint ID to assign: "))
+        complaint = next((c for c in all_complaint if c.get_complaint_id() == comp_id), None)
+        
+        if not complaint:
+            print("\n❌ Complaint not found!")
+            return
+            
+        print("\n👮 Available Authorities:")
+        authorities = [u for u in users_db.values() if u.role == "Authority"]
+        for idx, auth in enumerate(authorities, 1):
+            print(f"[{idx}] {auth.name}")
+            
+        auth_choice = int(input("🌈 Select authority: ")) - 1
+        if 0 <= auth_choice < len(authorities):
+            admin.assign_complaint(complaint, authorities[auth_choice])
+        else:
+            print("\n❌ Invalid authority selection!")
+    except ValueError:
+        print("\n❌ Invalid input format!")
 
 def authority_dashboard(authority):
     while True:
