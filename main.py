@@ -48,5 +48,63 @@ class User:
 
 
         return user
-     
+
+
+class Resident(User):
+    """Residents can submit, edit, and view complaints."""
+    def __init__(self, user_id, name, email, password):
+        super().__init__(user_id, name, email, "Resident", password)
+
+
+    def submit_complaint(self, complaint):
+        self.complaints.append(complaint)
+        all_complaint.append(complaint)
+        CSVManager.save_complaints(all_complaint)
+
+
+        # Notify all administrators
+        for user in users_db.values():
+            if user.role == "Administrator":
+                NotificationManager.send_notification(
+                   sender_id=self.get_user_id(),          
+                    recipient_id=user.get_user_id(),        
+                    message=f"New complaint (ID: {complaint.get_complaint_id()}) has been submitted by {self.name}."
+                )
+
+
+    def edit_complaint(self, complaint, new_title=None, new_category=None, new_location=None, new_description=None, new_media=None):
+        if complaint in self.complaints:
+            if new_title: complaint.title = new_title
+            if new_category: complaint.category = new_category
+            if new_location: complaint.location = new_location
+            if new_description: complaint.description = new_description
+            if new_media is not None: complaint.media = new_media
+            complaint.status = "Assigned"
+            print(f"Complaint '{complaint.get_complaint_id()}' updated by {self.name}.")
+            CSVManager.save_complaints(all_complaint)
+        else:
+            print("You can only edit your own complaints.")
+   
+    def view_complaints(self):
+        print("\n📋 My Complaints")
+        print("══════════════════════════════════════════════════════════")
+
+
+        for comp in self.complaints:
+            assigned_authority = self.get_authority(comp.assigned_authority_id)
+            assigned_authority_name = assigned_authority.name if assigned_authority else "Unassigned"
+            print(f"🆔 ID: {comp.get_complaint_id()} | 📝 Title: {comp.title}")
+            print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
+            print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
+            if comp.media:
+                print(f"🔗 Media: {comp.media}")
+            print(f"👮 Assigned Authority: {assigned_authority_name}")
+            print("---------------------------------------------------------")
+        print("══════════════════════════════════════════════════════════")
+       
+    def get_authority(self, user_id):
+        for user in users_db.values():  
+            if str(user.get_user_id()) == str(user_id):
+                return user
+        return None
 
