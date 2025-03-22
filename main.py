@@ -569,6 +569,65 @@ def authority_dashboard(authority):
             break
         else:
             print("\n❌ Invalid choice. Please try again.")
+
+def handle_request_details(authority):
+    if not authority.assigned_complaints:
+        print("📭 No assigned complaints to request details for.")
+        return
+
+    print("\n🔍 Assigned Complaints:")
+    for idx, complaint in enumerate(authority.assigned_complaints, 1):
+        print(f"{idx}. 🆔 {complaint.get_complaint_id()} | {complaint.title} | Status: {complaint.status}")
+
+    try:
+        choice = int(input("\n👉 Enter the number of the complaint to request details for: ")) - 1
+        if 0 <= choice < len(authority.assigned_complaints):
+            complaint = authority.assigned_complaints[choice]
+            detail_request = input("📝 Enter the additional information needed: ").strip()
+            authority.request_details(complaint, detail_request)
+            print("🔔 Request for more details has been sent.")
+        else:
+            print("❌ Invalid choice. Please try again.")
+    except ValueError:
+        print("❌ Invalid input. Please enter a valid number.")
+
+def handle_resolve_complaint(authority):
+    if not authority.assigned_complaints:
+        print("📭 No assigned complaints to resolve.")
+        return
+
+    print("📋 Assigned Complaints:")
+    for idx, complaint in enumerate(authority.assigned_complaints, 1):
+        print(f"{idx}. 🆔 {complaint.get_complaint_id()} | {complaint.title} | Status: {complaint.status}")
+    try:
+        choice = int(input("\n👉 Enter the number of the complaint to resolve: ")) - 1
+        if choice < 0 or choice >= len(authority.assigned_complaints):
+            print("❌ Invalid selection. Please try again.")
+            return
+
+        complaint = authority.assigned_complaints[choice]
+        
+        authority.resolve_complaint(complaint)
+        print("✅ Complaint resolved successfully.")
+
+    except ValueError:
+        print("❌ Invalid input. Please enter a valid number.")
+
+def handle_reject_complaint(authority: Authority):
+    if not authority.assigned_complaints:
+        print("❌ No assigned complaints to reject.")
+        return
+
+    for idx, complaint in enumerate(authority.assigned_complaints, 1):
+        print(f"{idx}. 🆔 {complaint.get_complaint_id()} | {complaint.title} | Status: {complaint.status}")
+
+    try:
+        choice = int(input("Enter the complaint number to reject: ")) - 1
+        complaint = authority.assigned_complaints[choice]
+        reason = input("Enter the reason for rejection: ").strip()
+        authority.reject_complaint(complaint, reason)
+    except (ValueError, IndexError):
+        print("❌ Invalid input.")
         
 if __name__ == "__main__":
     main()
