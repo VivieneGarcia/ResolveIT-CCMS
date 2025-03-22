@@ -160,3 +160,57 @@ class Administrator(User):
                 return user
         print("🚫 User not found.")
         return None
+
+
+class Authority(User):
+    """Authorities can resolve, reject complaints, or request more details."""
+    def __init__(self, user_id, name, email, password):
+        super().__init__(user_id, name, email, "Authority", password)
+
+
+    def resolve_complaint(self, complaint):
+        complaint.status = "Resolved"
+        NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),            
+            message=f"Your complaint (ID: {complaint.get_complaint_id()}) has been resolved by {self.name}."
+        )
+        CSVManager.save_complaints(all_complaint)
+
+
+    def reject_complaint(self, complaint, reason):
+       complaint.status = "Rejected"
+        NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),  
+            message=f"Your complaint (ID: {complaint.get_complaint_id()}) was rejected by {self.name}. Reason: {reason}"
+        )
+        CSVManager.save_complaints(all_complaint)
+
+
+    def request_details(self, complaint, detail_request):
+        complaint.status = "Pending Details"
+        NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),
+            message=f"🔔 {self.name} requests more details for complaint (ID: {complaint.get_complaint_id()}):{detail_request}"
+        )
+        CSVManager.save_complaints(all_complaint)
+   
+    def view_assigned_complaints(self):
+        """Displays all complaints assigned to this authority."""
+        print(f"\n📋 Assigned Complaints for {self.name}:")
+
+
+        found = False  # To check if there are any assigned complaints
+
+
+        for comp in all_complaint:
+            # Check if the complaint is assigned to this authority
+            if comp.assigned_authority_id == self.get_user_id():
+                found = True
+                print("---------------------------------------------------------")
+                print(f"🆔 ID: {comp.get_complaint_id()} | User: {comp.get_user_id()}")
+                print(f"📝 Title: {comp.title}")
+                print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
+                print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
+                if comp.media:
+                    print(f"🔗 Media: {comp.media}")
+                print("---------------------------------------------------------")
+       
+        if not found:
+            print("📄 No complaints assigned to you.")
