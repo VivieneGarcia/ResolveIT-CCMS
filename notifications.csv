@@ -1,0 +1,7 @@
+sender_id,recipient_id,message,timestamp
+
+3,1,New complaint (ID: 1) has been submitted by 3.,2025-03-22T19:52:00.485561
+3,1,New complaint (ID: 2) has been submitted by 3.,2025-03-22T19:52:10.904371
+1,2,New complaint (ID: 1) assigned to you.,2025-03-22T19:53:22.866302
+2,3,Your complaint (ID: 1) has been assigned to an authority.,2025-03-22T19:53:22.867253
+2,3,🔔 2 requests more details for complaint (ID: 1):new vid pls,2025-03-22T19:54:13.572795

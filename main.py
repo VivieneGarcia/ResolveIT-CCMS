@@ -1,8 +1,28 @@
 import csv
 import datetime
+import os
 from typing import Dict, List
-
+    
 class CSVManager:
+    @staticmethod
+    def ensure_csv_files():
+        """Ensure that all required CSV files exist with the correct headers."""
+        files_with_headers = {
+            "users.csv": ['username', 'user_id', 'name', 'email', 'role', 'password'],
+            "complaints.csv": ['complaint_id', 'user_id', 'title', 'category', 'location', 
+                               'description', 'media', 'status', 'timestamp', 'assigned_authority_id'],
+            "notifications.csv": ['sender_id', 'recipient_id', 'message', 'timestamp']
+        }
+
+        for file, headers in files_with_headers.items():
+            if not os.path.exists(file):
+                with open(file, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(headers)  # Write the header row
+                print(f"✅ Created missing file: {file}")
+            else:
+                print(f"🔹 {file} already exists.")
+                
     @staticmethod
     def load_users() -> Dict[str, 'User']:
         users = {}
@@ -56,8 +76,7 @@ class CSVManager:
             for c in complaints:
                 writer.writerow([c.get_complaint_id(), c.get_user_id(), c.title, c.category, c.location, c.description,
                                  c.media or '', c.status, c.timestamp.isoformat(), c.assigned_authority_id or ''])
-
-
+                
     @staticmethod
     def load_notifications():
         notifications = []
@@ -106,6 +125,8 @@ class CSVManager:
         else:
             print(f"❌ Complaint {complaint.get_complaint_id()} not found in CSV.")
 
+print("🔹 Ensuring CSV files exist...")
+CSVManager.ensure_csv_files() 
 
 class User:
     def __init__(self, user_id: int, name: str, email: str, role: str, password: str):
@@ -147,10 +168,13 @@ class User:
         else:
             return None
 
-
+        if isinstance(user, Resident):
+            user.complaints = [] 
+        if isinstance(user, Authority):
+            user.assigned_complaints = [] 
+            
         users_db[username] = user
         CSVManager.save_users(users_db)
-
 
         return user
 
@@ -160,12 +184,10 @@ class Resident(User):
     def __init__(self, user_id, name, email, password):
         super().__init__(user_id, name, email, "Resident", password)
 
-
     def submit_complaint(self, complaint):
         self.complaints.append(complaint)
         all_complaint.append(complaint)
         CSVManager.save_complaints(all_complaint)
-
 
         # Notify all administrators
         for user in users_db.values():
@@ -175,7 +197,6 @@ class Resident(User):
                     recipient_id=user.get_user_id(),        
                     message=f"New complaint (ID: {complaint.get_complaint_id()}) has been submitted by {self.name}."
                 )
-
 
     def edit_complaint(self, complaint, new_title=None, new_category=None, new_location=None, new_description=None, new_media=None):
         if complaint in self.complaints:
@@ -193,7 +214,6 @@ class Resident(User):
     def view_complaints(self):
         print("\n📋 My Complaints")
         print("══════════════════════════════════════════════════════════")
-
 
         for comp in self.complaints:
             assigned_authority = self.get_authority(comp.assigned_authority_id)
@@ -217,32 +237,25 @@ class Administrator(User):
     def __init__(self, user_id, name, email, password):
         super().__init__(user_id, name, email, "Administrator", password)
 
-
     def assign_complaint(self, complaint, authority):
         complaint.status = "Assigned"
         complaint.assigned_authority_id = authority.get_user_id()
         authority.assigned_complaints.append(complaint)
 
-
-        NotificationManager.send_notification(sender_id=user.get_user_id(), recipient_id=authority.get_user_id(),  
+        NotificationManager.send_notification(sender_id=self.get_user_id(), recipient_id=authority.get_user_id(),  
         message=f"New complaint (ID: {complaint.get_complaint_id()}) assigned to you."
    )
 
-        
         NotificationManager.send_notification(sender_id=authority.get_user_id(), recipient_id=complaint.get_user_id(),
             message=f"Your complaint (ID: {complaint.get_complaint_id()}) has been assigned to an authority."
         )
 
-
         CSVManager.update_complaint_in_csv(complaint)
-
 
     def view_all_complaints(self):
         print("\n📋 All Complaints:")
         for comp in all_complaint:
             assigned_authority_name = "Unassigned"
-            print(f"🔎 Checking assigned authority ID: {comp.assigned_authority_id}")  # Debug
-
 
             if comp.assigned_authority_id:
                 assigned_authority = self.get_authority(comp.assigned_authority_id)
@@ -333,13 +346,12 @@ class Complaint:
         self.timestamp = timestamp
         self.assigned_authority_id = assigned_authority_id
 
-
     def get_complaint_id(self):
         return self.__complaint_id  
 
-
     def get_user_id(self):
         return self.__user_id
+
 class NotificationManager:
     notifications_db = CSVManager.load_notifications()
     @classmethod
@@ -371,7 +383,6 @@ class NotificationManager:
                     print(f"⚠️ Invalid timestamp format: {timestamp}")
                     continue
             print(f"{idx}. [{timestamp.strftime('%m/%d %H:%M')}] {notif['message']}")
-
 
 users_db = CSVManager.load_users()
 all_complaint = CSVManager.load_complaints()
@@ -433,10 +444,6 @@ def handle_register():
         users_db
     )
     if user:
-        if isinstance(user, Resident):
-            user.complaints = []
-        if isinstance(user, Authority):
-            user.assigned_complaints = [] 
         next_user_id += 1
         print("✅ Registration successful!")
         
