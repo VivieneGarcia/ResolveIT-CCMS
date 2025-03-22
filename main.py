@@ -282,7 +282,7 @@ class Authority(User):
 
 
     def reject_complaint(self, complaint, reason):
-       complaint.status = "Rejected"
+        complaint.status = "Rejected"
         NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),  
             message=f"Your complaint (ID: {complaint.get_complaint_id()}) was rejected by {self.name}. Reason: {reason}"
         )
@@ -434,10 +434,72 @@ def handle_register():
     )
     if user:
         if isinstance(user, Resident):
-            user.complaints = [] d
+            user.complaints = []
         if isinstance(user, Authority):
             user.assigned_complaints = [] 
         next_user_id += 1
         print("✅ Registration successful!")
         
+def resident_dashboard(user: Resident):
+    while True:
+        print(f"\n🏠 Resident Dashboard: {user.name}")
+        print("1. Submit Complaint")
+        print("2. Edit Complaint")
+        print("3. My Complaints")
+        print("4. Notifications")
+        print("5. Logout")
+        choice = input("\n👉 Enter choice: ").strip()
 
+        if choice == '1': handle_submit_complaint(user)
+        elif choice == '2': handle_edit_complaint(user)
+        elif choice == '3': user.view_complaints()
+        elif choice == '4': NotificationManager.view_notifications(user.get_user_id())
+        elif choice == '5': break
+        else: print("❌ Invalid choice")
+        
+def admin_dashboard(admin):
+    while True:
+        print(f"\n👔 Administrator Dashboard: {admin.name} 👔")
+        print("[1] View all complaints 📋")
+        print("[2] Assign complaint ➡️")
+        print("[3] View notifications 🔔")
+        print("[4] Logout 🚪")
+        choice = input("\n🌈 Enter your choice: ")
+
+        if choice == '1': admin.view_all_complaints()
+        elif choice == '2':handle_assign_complaint(admin)
+        elif choice == '3':NotificationManager.view_notifications(admin.get_user_id())
+        elif choice == '4':
+            admin.logout()
+            break
+        else:print("\n❌ Invalid choice. Please try again.")
+
+def authority_dashboard(authority):
+    while True:
+        print(f"\n👮 Authority Dashboard: {authority.name} 👮")
+        print("[1] View assigned complaints 📋")
+        print("[2] Resolve complaint ✅")
+        print("[3] Reject complaint ❌")
+        print("[4] Request details ❓")
+        print("[5] View notifications 🔔")
+        print("[6] Logout 🚪")
+        choice = input("\n🌈 Enter your choice: ")
+
+        if choice == '1':
+            authority.view_assigned_complaints()
+        elif choice == '2':
+            handle_resolve_complaint(authority)
+        elif choice == '3':
+            handle_reject_complaint(authority)
+        elif choice == '4':
+            handle_request_details(authority)
+        elif choice == '5':
+            NotificationManager.view_notifications(authority.get_user_id())
+        elif choice == '6':
+            authority.logout()
+            break
+        else:
+            print("\n❌ Invalid choice. Please try again.")
+        
+if __name__ == "__main__":
+    main()
