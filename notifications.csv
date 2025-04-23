@@ -5,3 +5,21 @@ sender_id,recipient_id,message,timestamp
 1,2,New complaint (ID: 1) assigned to you.,2025-03-22T19:53:22.866302
 2,3,Your complaint (ID: 1) has been assigned to an authority.,2025-03-22T19:53:22.867253
 2,3,🔔 2 requests more details for complaint (ID: 1):new vid pls,2025-03-22T19:54:13.572795
+3,1,New complaint (ID: 3) has been submitted by 3.,2025-03-23T16:45:51.954231
+1,2,New complaint (ID: 1) assigned to you.,2025-03-23T16:54:06.079394
+2,3,Your complaint (ID: 1) has been assigned to an authority.,2025-03-23T16:54:06.080712
+1,2,New complaint (ID: 3) assigned to you.,2025-03-23T16:58:10.203582
+2,3,Your complaint (ID: 3) has been assigned to an authority.,2025-03-23T16:58:10.206457
+2,3,Your complaint (ID: 3) has been resolved by 2.,2025-03-23T17:02:09.397007
+3,1,New complaint (ID: 4) has been submitted by 3.,2025-03-31T08:46:00.872101
+1,2,New complaint (ID: 4) assigned to you.,2025-03-31T08:48:07.595564
+2,3,Your complaint (ID: 4) has been assigned to an authority.,2025-03-31T08:48:07.596787
+3,1,New complaint (ID: 5) has been submitted by 3.,2025-04-23T13:57:12.556654
+3,1,New complaint (ID: 6) has been submitted by 3.,2025-04-23T13:58:34.862234
+3,1,New complaint (ID: 7) has been submitted by 3.,2025-04-23T14:05:08.055338
+4,1,New complaint (ID: 8) has been submitted by residente.,2025-04-23T14:17:10.005807
+1,2,New complaint (ID: 8) assigned to you.,2025-04-23T14:18:21.836635
+1,2,New complaint (ID: 8) assigned to you.,2025-04-23T14:20:52.934805
+1,2,New complaint (ID: ang ingay) assigned to you.,2025-04-23T15:00:04.575042
+1,2,New complaint (ID: Ang Ingay) assigned to you.,2025-04-23T15:03:26.446239
+2,4,Your complaint (ID: Ang Ingay has been assigned to an authority.,2025-04-23T15:03:26.447235

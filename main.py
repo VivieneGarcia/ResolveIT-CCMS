@@ -2,7 +2,17 @@ import csv
 import datetime
 import os
 from typing import Dict, List
-    
+
+CATEGORIES = {
+    "1": "🔊 Noise",
+    "2": "🗑️ Garbage",
+    "3": "🚦 Traffic",
+    "4": "🎨 Vandalism",
+    "5": "🚰 Water Supply",
+    "6": "💡 Street Light",
+    "7": "❓ Other"
+}
+
 class CSVManager:
     @staticmethod
     def ensure_csv_files():
@@ -36,7 +46,6 @@ class CSVManager:
         except FileNotFoundError: pass
         return users
 
-
     @staticmethod
     def save_users(users: Dict[str, 'User']):
         with open('users.csv', 'w', newline='', encoding='utf-8') as file:
@@ -44,7 +53,6 @@ class CSVManager:
             writer.writerow(['username', 'user_id', 'name', 'email', 'role', 'password'])
             for username, user in users.items():
                 writer.writerow([username, user.get_user_id(), user.name, user.email, user.role, user._User__password])
-
 
     @staticmethod
     def load_complaints():
@@ -67,7 +75,6 @@ class CSVManager:
         except FileNotFoundError: pass
         return complaints
 
-
     @staticmethod
     def save_complaints(complaints: List['Complaint']):
         with open('complaints.csv', 'w', newline='', encoding='utf-8') as file:
@@ -87,7 +94,6 @@ class CSVManager:
                 notifications.append({'sender_id': int(row['sender_id']), 'recipient_id': recipient_id,
                                       'message': row['message'], 'timestamp': row['timestamp']})
         return notifications
-
 
     @staticmethod
     def save_notification(notification: dict):
@@ -136,7 +142,6 @@ class User:
         self.role = role
         self.__password = password
 
-
     def login(self, password: str):
         if password == self.__password:
             print(f"✅ User {self.name} logged in successfully.")
@@ -145,17 +150,14 @@ class User:
             print("❌ Invalid password. Access denied.")
             return False
 
-
     def logout(self):
         print(f"🚪 User {self.name} has logged out.")
-
 
     def get_user_id(self):
         return self.__user_id
    
     def get_password(self):
         return self.__password
-
 
     @classmethod
     def register(cls, user_id, username, name, email, role, password, users_db):
@@ -180,7 +182,6 @@ class User:
 
 
 class Resident(User):
-    """Residents can submit, edit, and view complaints."""
     def __init__(self, user_id, name, email, password):
         super().__init__(user_id, name, email, "Resident", password)
 
@@ -195,7 +196,7 @@ class Resident(User):
                 NotificationManager.send_notification(
                    sender_id=self.get_user_id(),          
                     recipient_id=user.get_user_id(),        
-                    message=f"New complaint (ID: {complaint.get_complaint_id()}) has been submitted by {self.name}."
+                    message=f"New complaint (Title: {complaint.title.title()}) has been submitted by {self.name}."
                 )
 
     def edit_complaint(self, complaint, new_title=None, new_category=None, new_location=None, new_description=None, new_media=None):
@@ -205,7 +206,6 @@ class Resident(User):
             if new_location: complaint.location = new_location
             if new_description: complaint.description = new_description
             if new_media is not None: complaint.media = new_media
-            complaint.status = "Assigned"
             print(f"Complaint '{complaint.get_complaint_id()}' updated by {self.name}.")
             CSVManager.save_complaints(all_complaint)
         else:
@@ -243,12 +243,13 @@ class Administrator(User):
         authority.assigned_complaints.append(complaint)
 
         NotificationManager.send_notification(sender_id=self.get_user_id(), recipient_id=authority.get_user_id(),  
-        message=f"New complaint (ID: {complaint.get_complaint_id()}) assigned to you."
+        message=f"New complaint (Title: {complaint.title.title()}) assigned to you."
    )
 
         NotificationManager.send_notification(sender_id=authority.get_user_id(), recipient_id=complaint.get_user_id(),
-            message=f"Your complaint (ID: {complaint.get_complaint_id()}) has been assigned to an authority."
+            message=f"Your complaint (Title: {complaint.title.title()}) has been assigned to an authority."
         )
+
 
         CSVManager.update_complaint_in_csv(complaint)
 
@@ -261,9 +262,15 @@ class Administrator(User):
                 assigned_authority = self.get_authority(comp.assigned_authority_id)
                 assigned_authority_name = assigned_authority.name if assigned_authority else "Unknown"
 
+            user = next(
+                (u for u in users_db.values() if getattr(u, '_User__user_id', None) == comp.get_user_id()),
+                None
+            )
+
+            user_name_display = user.name if user else f"Unknown (ID: {comp.get_user_id()})"
 
             print("---------------------------------------------------------")
-            print(f"🆔 ID: {comp.get_complaint_id()} | User: {comp.get_user_id()}")
+            print(f"🆔 ID: {comp.get_complaint_id()} | 👤 User: {user_name_display}")
             print(f"📝 Title: {comp.title}")
             print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
             print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
@@ -271,7 +278,7 @@ class Administrator(User):
                 print(f"🔗 Media: {comp.media}")
             print(f"👮 Assigned Authority: {assigned_authority_name}")
             print("---------------------------------------------------------")
-   
+
     def get_authority(self, user_id):
         for user in users_db.values():
             if str(user.get_user_id()) == str(user_id):
@@ -279,57 +286,59 @@ class Administrator(User):
         print("🚫 User not found.")
         return None
 
-
 class Authority(User):
-    """Authorities can resolve, reject complaints, or request more details."""
     def __init__(self, user_id, name, email, password):
         super().__init__(user_id, name, email, "Authority", password)
-
 
     def resolve_complaint(self, complaint):
         complaint.status = "Resolved"
         NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),            
-            message=f"Your complaint (ID: {complaint.get_complaint_id()}) has been resolved by {self.name}."
+            message=f"Your complaint (Title: {complaint.title.title()}) has been resolved by {self.name}."
         )
         CSVManager.save_complaints(all_complaint)
-
 
     def reject_complaint(self, complaint, reason):
         complaint.status = "Rejected"
         NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),  
-            message=f"Your complaint (ID: {complaint.get_complaint_id()}) was rejected by {self.name}. Reason: {reason}"
+            message=f"Your complaint (Title: {complaint.title.title()}) was rejected by {self.name}. Reason: {reason}"
         )
         CSVManager.save_complaints(all_complaint)
-
 
     def request_details(self, complaint, detail_request):
         complaint.status = "Pending Details"
         NotificationManager.send_notification(sender_id=self.get_user_id(),recipient_id=complaint.get_user_id(),
-            message=f"🔔 {self.name} requests more details for complaint (ID: {complaint.get_complaint_id()}):{detail_request}"
+            message=f"🔔 {self.name} requests more details for complaint (Title: {complaint.title.title()}):{detail_request}"
         )
         CSVManager.save_complaints(all_complaint)
    
     def view_assigned_complaints(self):
         """Displays all complaints assigned to this authority."""
         print(f"\n📋 Assigned Complaints for {self.name}:")
-
-
         found = False  # To check if there are any assigned complaints
-
-
+        
         for comp in all_complaint:
             # Check if the complaint is assigned to this authority
             if comp.assigned_authority_id == self.get_user_id():
                 found = True
+                
+                # Find the user who submitted the complaint
+                user = next(
+                    (u for u in users_db.values() if getattr(u, '_User__user_id', None) == comp.get_user_id()),
+                    None
+                )
+                
+                # Display the user's name if found, otherwise show the ID
+                user_display = user.name if user else f"User ID: {comp.get_user_id()}"
+                
                 print("---------------------------------------------------------")
-                print(f"🆔 ID: {comp.get_complaint_id()} | User: {comp.get_user_id()}")
+                print(f"🆔 ID: {comp.get_complaint_id()} | 👤 User: {user_display}")
                 print(f"📝 Title: {comp.title}")
                 print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
                 print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
                 if comp.media:
                     print(f"🔗 Media: {comp.media}")
                 print("---------------------------------------------------------")
-       
+        
         if not found:
             print("📄 No complaints assigned to you.")
 
@@ -365,7 +374,6 @@ class NotificationManager:
         cls.notifications_db.append(notification)
         CSVManager.save_notification(notification)
         print(f"🔔 Notification sent to user {recipient_id}")
-
 
     @classmethod
     def view_notifications(cls, user_id: int):
@@ -466,21 +474,37 @@ def resident_dashboard(user: Resident):
 
 def handle_submit_complaint(user: Resident):
     global next_complaint_id
-    title = input("Enter title: ")
-    category = input("Enter complaint category: ")
-    location = input("Enter location: ")
-    description = input("Enter complaint description: ")
-    media = input("Provide any media link (optional): ") or None
+
+    print("\n📂 Select a category:")
+    for key, value in CATEGORIES.items():
+        print(f"[{key}] {value}")
+    category_choice = input("👉 Enter category number: ").strip()
+    category = CATEGORIES.get(category_choice, "Other")
+
+    title = input("👉 Enter title: ")
+    location = input("👉 Enter location: ")
+    description = input("👉 Enter complaint description: ")
+    media = input("👉 Provide any media link (optional): ") or None
     timestamp = datetime.datetime.now()
     assigned_authority_id = None  
 
-    complaint = Complaint(complaint_id=next_complaint_id,user_id=user.get_user_id(),title=title,category=category,
-        location=location,description=description,media=media,status="Submitted",timestamp=timestamp,
-        assigned_authority_id=assigned_authority_id)
+    complaint = Complaint(
+        complaint_id=next_complaint_id,
+        user_id=user.get_user_id(),
+        title=title,
+        category=category,
+        location=location,
+        description=description,
+        media=media,
+        status="Submitted",
+        timestamp=timestamp,
+        assigned_authority_id=assigned_authority_id
+    )
 
     user.submit_complaint(complaint)
     next_complaint_id += 1
     print("✅ Complaint submitted successfully!")
+
 
 def handle_edit_complaint(resident):
     resident.view_complaints()
@@ -501,7 +525,12 @@ def handle_edit_complaint(resident):
             
         print("\n✏️ Edit Complaint (leave blank to keep current value)")
         new_title = input(f"📝 New title ({complaint.title}): ") or complaint.title
-        new_category = input(f"🏷️ New category ({complaint.category}): ") or complaint.category
+        print("\n🏷️ Select new category or press Enter to keep current")
+        for key, value in CATEGORIES.items():
+            print(f"[{key}] {value}")
+        new_cat_choice = input(f"New category ({complaint.category}): ").strip()
+        new_category = CATEGORIES.get(new_cat_choice, complaint.category) if new_cat_choice else complaint.category
+
         new_location = input(f"📍 New location ({complaint.location}): ") or complaint.location
         new_description = input(f"📄 New description ({complaint.description}): ") or complaint.description
         new_media = input(f"📷 New media ({complaint.media}): ") or complaint.media
