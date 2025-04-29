@@ -1,5 +1,4 @@
 username,user_id,name,email,role,password
-1,1,1,1,Administrator,1
-2,2,2,2,Authority,2
-toyo,3,3,3,Resident,3
-Resident test,4,residente,res,Resident,res
+Vivs,1,Viviene Garcia,vivs@gmail.com,Resident,vivi
+Mara,2,Mara J,mara@gmail.com,Administrator,mara
+Princess,3,Princess M,princess@gmail.com,Authority,princess

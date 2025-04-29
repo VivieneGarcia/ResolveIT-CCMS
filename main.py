@@ -13,6 +13,77 @@ CATEGORIES = {
     "7": "❓ Other"
 }
 
+class Testing:
+    def __init__(self, user):
+        self.user = user
+        self.next_complaint_id = 1
+        self.user.complaints = CSVManager.load_complaints()
+        
+    def test_submit_complaint(self, category_choice, title, location, description, media=None):
+        global next_complaint_id
+
+        if category_choice not in CATEGORIES:
+            return "❗ Invalid category."
+        if not title or len(title) > 50:
+            return "❗ Invalid title."
+        if not location or len(location) > 120:
+            return "❗ Invalid location."
+        if not description:
+            return "❗ Invalid description."
+
+        category = CATEGORIES[category_choice]
+        timestamp = datetime.datetime.now()
+        assigned_authority_id = None
+
+        complaint = Complaint(
+            complaint_id=next_complaint_id,
+            user_id=user.get_user_id(),
+            title=title,
+            category=category,
+            location=location,
+            description=description,
+            media=media,
+            status="Submitted",
+            timestamp=timestamp,
+            assigned_authority_id=assigned_authority_id
+        )
+
+        self.user.submit_complaint(complaint)
+        self.next_complaint_id += 1
+        return "✅ Complaint submitted successfully"
+
+    def test_edit_complaint(self, comp_id, new_title, new_category, new_location, new_description, new_media=None):
+        complaint = next((c for c in self.user.complaints if c.get_complaint_id() == comp_id), None)
+        
+        if not complaint:
+            return "❌ Complaint not found or Invalid choice."
+        
+        if complaint.status.lower() in ["rejected", "resolved"]:
+            return "❌ This complaint has been rejected or resolved and cannot be edited."
+        
+        # Validate new title
+        if len(new_title) > 50:
+            return f"❗ Title is too long ({len(new_title)} characters). Maximum is 50."
+        
+        # Validate new location
+        if len(new_location) > 120:
+            return f"❗ Location is too long ({len(new_location)} characters). Maximum is 120."
+        
+        # Validate new description
+        if not new_description:
+            return "❗ Description cannot be empty."
+        
+        # Update the complaint
+        complaint.title = new_title
+        complaint.category = new_category
+        complaint.location = new_location
+        complaint.description = new_description
+        complaint.media = new_media
+        
+        self.user.edit_complaint(complaint, new_title, new_category, new_location, new_description, new_media)
+        
+        return "✅ Complaint updated successfully"
+
 class CSVManager:
     @staticmethod
     def ensure_csv_files():
@@ -131,8 +202,8 @@ class CSVManager:
         else:
             print(f"❌ Complaint {complaint.get_complaint_id()} not found in CSV.")
 
-print("🔹 Ensuring CSV files exist...")
-CSVManager.ensure_csv_files() 
+# print("🔹 Ensuring CSV files exist...")
+# CSVManager.ensure_csv_files() 
 
 class User:
     def __init__(self, user_id: int, name: str, email: str, role: str, password: str):
@@ -184,11 +255,13 @@ class User:
 class Resident(User):
     def __init__(self, user_id, name, email, password):
         super().__init__(user_id, name, email, "Resident", password)
+        self.complaints = []
 
     def submit_complaint(self, complaint):
         self.complaints.append(complaint)
         all_complaint.append(complaint)
         CSVManager.save_complaints(all_complaint)
+        print("✅ Complaint submitted successfully!")
 
         # Notify all administrators
         for user in users_db.values():
@@ -206,8 +279,9 @@ class Resident(User):
             if new_location: complaint.location = new_location
             if new_description: complaint.description = new_description
             if new_media is not None: complaint.media = new_media
-            print(f"Complaint '{complaint.get_complaint_id()}' updated by {self.name}.")
             CSVManager.save_complaints(all_complaint)
+            print("✅ Complaint updated successfully")
+            
         else:
             print("You can only edit your own complaints.")
    
@@ -220,6 +294,7 @@ class Resident(User):
             assigned_authority_name = assigned_authority.name if assigned_authority else "Unassigned"
             print(f"🆔 ID: {comp.get_complaint_id()} | 📝 Title: {comp.title}")
             print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
+            print(f"📝 Description: {comp.description}")
             print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
             if comp.media:
                 print(f"🔗 Media: {comp.media}")
@@ -273,6 +348,7 @@ class Administrator(User):
             print(f"🆔 ID: {comp.get_complaint_id()} | 👤 User: {user_name_display}")
             print(f"📝 Title: {comp.title}")
             print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
+            print(f"📝 Description: {comp.description}")
             print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
             if comp.media:
                 print(f"🔗 Media: {comp.media}")
@@ -334,6 +410,7 @@ class Authority(User):
                 print(f"🆔 ID: {comp.get_complaint_id()} | 👤 User: {user_display}")
                 print(f"📝 Title: {comp.title}")
                 print(f"🏷️ Category: {comp.category} | 📍 Location: {comp.location}")
+                print(f"📝 Description: {comp.description}")
                 print(f"🚦 Status: {comp.status} | ⏰ Timestamp: {comp.timestamp.strftime('%Y-%m-%d %H:%M')}")
                 if comp.media:
                     print(f"🔗 Media: {comp.media}")
@@ -478,13 +555,47 @@ def handle_submit_complaint(user: Resident):
     print("\n📂 Select a category:")
     for key, value in CATEGORIES.items():
         print(f"[{key}] {value}")
-    category_choice = input("👉 Enter category number: ").strip()
-    category = CATEGORIES.get(category_choice, "Other")
 
-    title = input("👉 Enter title: ")
-    location = input("👉 Enter location: ")
-    description = input("👉 Enter complaint description: ")
-    media = input("👉 Provide any media link (optional): ") or None
+    # Validate category choice
+    while True:
+        category_choice = input("👉 Enter category number: ").strip()
+        if category_choice in CATEGORIES:
+            category = CATEGORIES[category_choice]
+            break
+        else:
+            print("❗ Invalid category. Please enter a number from the list.")
+
+    # Validate non-empty title with max 50 characters
+    while True:
+        title = input("👉 Enter title (max 50 characters): ").strip()
+        if not title:
+            print("❗ Title cannot be empty. Please enter a valid title.")
+        elif len(title) > 50:
+            print(f"❗ Title is too long ({len(title)} characters). Maximum is 50.")
+        else:
+            break
+
+    # Validate non-empty location with max 120 characters
+    while True:
+        location = input("👉 Enter location (max 120 characters): ").strip()
+        if not location:
+            print("❗ Location cannot be empty. Please enter a valid location.")
+        elif len(location) > 120:
+            print(f"❗ Location is too long ({len(location)} characters). Maximum is 120.")
+        else:
+            break
+
+    # Validate non-empty description
+    while True:
+        description = input("👉 Enter complaint description: ").strip()
+        if not description:
+            print("❗ Description cannot be empty. Please enter a valid description.")
+        else:
+            break
+
+    # Media link (optional)
+    media = input("👉 Provide any media link (optional): ").strip() or None
+
     timestamp = datetime.datetime.now()
     assigned_authority_id = None  
 
@@ -503,41 +614,82 @@ def handle_submit_complaint(user: Resident):
 
     user.submit_complaint(complaint)
     next_complaint_id += 1
-    print("✅ Complaint submitted successfully!")
-
+    
 
 def handle_edit_complaint(resident):
     resident.view_complaints()
     if not resident.complaints:
+        print("\n❗ No complaints found!")
         return
-    try:
-        comp_id = int(input("\n🆔 Enter complaint ID to edit: "))
-        complaint = next((c for c in resident.complaints if c.get_complaint_id() == comp_id), None)
-        
-        if not complaint:
-            print("\n❌ Complaint not found or you don't have permission!")
-            return
-        
-        # Check if the complaint is rejected or resolved
-        if complaint.status.lower() in ["rejected", "resolved"]:
-            print("❌ This complaint has been rejected or resolved and cannot be edited.")
-            return
-            
-        print("\n✏️ Edit Complaint (leave blank to keep current value)")
-        new_title = input(f"📝 New title ({complaint.title}): ") or complaint.title
-        print("\n🏷️ Select new category or press Enter to keep current")
-        for key, value in CATEGORIES.items():
-            print(f"[{key}] {value}")
-        new_cat_choice = input(f"New category ({complaint.category}): ").strip()
-        new_category = CATEGORIES.get(new_cat_choice, complaint.category) if new_cat_choice else complaint.category
 
-        new_location = input(f"📍 New location ({complaint.location}): ") or complaint.location
-        new_description = input(f"📄 New description ({complaint.description}): ") or complaint.description
-        new_media = input(f"📷 New media ({complaint.media}): ") or complaint.media
-        
-        resident.edit_complaint(complaint, new_title, new_category, new_location, new_description, new_media)
-    except ValueError:
-        print("\n❌ Invalid complaint ID format!")
+    # Show complaints with index numbers
+    print("\n📋 Select a complaint to edit:")
+    for idx, complaint in enumerate(resident.complaints, start=1):
+        print(f"[{idx}] 📝 {complaint.title} | 📍 {complaint.location} | 🚦 {complaint.status}")
+
+    # Choose from numbered list
+    while True:
+        choice_input = input("➡️ Enter the number of the complaint to edit: ").strip()
+        if choice_input.isdigit():
+            index = int(choice_input) - 1
+            if 0 <= index < len(resident.complaints):
+                complaint = resident.complaints[index]
+                break
+            else:
+                print("❌ Invalid choice. Please choose a valid number.")
+        else:
+            print("❌ Please enter a number.")
+
+    # Prevent editing resolved/rejected complaints
+    if complaint.status.lower() in ["rejected", "resolved"]:
+        print("❌ This complaint has been rejected or resolved and cannot be edited.")
+        return
+
+    print("\n✏️ Edit Complaint (leave blank to keep current value)")
+
+    # Title validation
+    while True:
+        new_title = input(f"📝 New title ({complaint.title}): ").strip() or complaint.title
+        if len(new_title) > 50:
+            print(f"❗ Title is too long ({len(new_title)} characters). Maximum is 50.")
+        else:
+            break
+
+    # Category selection
+    print("\n🏷️ Select new category or press Enter to keep current")
+    for key, value in CATEGORIES.items():
+        print(f"[{key}] {value}")
+    while True:
+        new_cat_choice = input(f"New category ({complaint.category}): ").strip()
+        if new_cat_choice == "" or new_cat_choice in CATEGORIES:
+            new_category = CATEGORIES.get(new_cat_choice, complaint.category) if new_cat_choice else complaint.category
+            break
+        else:
+            print("❗ Invalid category. Please enter a number from the list.")
+
+    # Location validation
+    while True:
+        new_location = input(f"📍 New location ({complaint.location}): ").strip() or complaint.location
+        if len(new_location) > 120:
+            print(f"❗ Location is too long ({len(new_location)} characters). Maximum is 120.")
+        else:
+            break
+
+    # Description validation
+    while True:
+        new_description = input(f"📄 New description ({complaint.description}): ").strip() or complaint.description
+        if not new_description:
+            print("❗ Description cannot be empty. Please enter a valid description.")
+        else:
+            break
+
+    # Optional media
+    new_media = input(f"📷 New media ({complaint.media}): ").strip() or complaint.media
+
+    # Update complaint
+    resident.edit_complaint(complaint, new_title, new_category, new_location, new_description, new_media)
+
+
         
 def admin_dashboard(admin):
     while True:
@@ -664,6 +816,10 @@ def handle_reject_complaint(authority: Authority):
         authority.reject_complaint(complaint, reason)
     except (ValueError, IndexError):
         print("❌ Invalid input.")
-        
+
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+          
 if __name__ == "__main__":
     main()
