@@ -1,8 +1,11 @@
 complaint_id,user_id,title,category,location,description,media,status,timestamp,assigned_authority_id
 1,1,Updated title,🗑️ Garbage,New location,Updated description,,Submitted,2025-04-27T16:42:31.979104,
 2,1,sfsfs,🗑️ Garbage,sdfsdf,sdfsdf,sdfsfs,Submitted,2025-04-27T17:47:35.846695,
-3,1,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-04-29T21:19:38.887786,
-4,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-04-29T21:38:30.939832,
-5,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-04-29T21:46:16.337924,
-6,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-04-29T21:58:14.515642,
-6,3,xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,🔊 Noise,Main street,Garbage not collected.,,Submitted,2025-04-29T21:58:14.517205,
+3,1,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Resolved,2025-04-29T21:19:38.887786,
+4,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Rejected,2025-04-29T21:38:30.939832,
+5,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Pending Details,2025-04-29T21:46:16.337924,3
+6,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-04-29T21:58:14.515642,3
+6,3,xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,🔊 Noise,Main street,Garbage not collected.,,Rejected,2025-04-29T21:58:14.517205,3
+7,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-05-02T18:08:59.586299,3
+8,3,Flooded area,🔊 Noise,Corner of 3rd and Pine,Severe flooding after rainfall.,,Submitted,2025-05-04T18:57:33.384652,
+8,3,xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,🔊 Noise,Main street,Garbage not collected.,,Submitted,2025-05-04T18:57:33.386743,

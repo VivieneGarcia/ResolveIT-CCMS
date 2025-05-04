@@ -84,6 +84,58 @@ class Testing:
         
         return "✅ Complaint updated successfully"
 
+    def handle_resolve_complaint(self,complaint_number):
+        for user in users_db.values():
+            user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
+
+        if not user.assigned_complaints:
+            return "📭 No assigned complaints to resolve."
+
+        index = complaint_number - 1
+        if 0 <= index < len(user.assigned_complaints):
+            complaint = user.assigned_complaints[index]
+            user.resolve_complaint(complaint)
+            return "✅ Complaint resolved successfully."
+        else:
+            return "❌ Invalid selection. Please try again."
+
+    def handle_reject_complaint(self, complaint_number, rejection_reason):
+        for user in users_db.values():
+            user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
+        if not user.assigned_complaints:
+            return "❌ No assigned complaints to reject."
+
+        index = complaint_number - 1
+        if 0 <= index < len(user.assigned_complaints):
+            if not rejection_reason:
+                return "⚠️ Rejection reason cannot be empty."
+            complaint = user.assigned_complaints[index]
+            user.reject_complaint(complaint, rejection_reason)
+            return "🚫 Complaint rejected successfully."
+        else:
+            return "❌ Invalid choice. Please select a valid complaint number."
+
+    def handle_request_details(self, authority, complaint_number, detail_request):
+        for user in users_db.values():
+            if isinstance(user, Resident):
+                user.complaints = [c for c in all_complaint if c.get_user_id() == user.get_user_id()]
+            if isinstance(user, Authority):
+                user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
+
+        if not user.assigned_complaints:
+            return "📭 No assigned complaints to request details for."
+
+        index = complaint_number - 1
+        if 0 <= index < len(user.assigned_complaints):
+            if not detail_request:
+                return "⚠️ Detail request cannot be empty."
+            complaint = user.assigned_complaints[index]
+            user.request_details(complaint, detail_request)
+            return "🔔 Request for more details has been sent."
+        else:
+            return "❌ Invalid choice. Please select a valid complaint number."
+
+
 class CSVManager:
     @staticmethod
     def ensure_csv_files():
@@ -768,16 +820,22 @@ def handle_request_details(authority):
         print(f"{idx}. 🆔 {complaint.get_complaint_id()} | {complaint.title} | Status: {complaint.status}")
 
     try:
-        choice = int(input("\n👉 Enter the number of the complaint to request details for: ")) - 1
+        choice_input = input("\n👉 Enter the number of the complaint to request details for: ").strip()
+        choice = int(choice_input) - 1
         if 0 <= choice < len(authority.assigned_complaints):
             complaint = authority.assigned_complaints[choice]
             detail_request = input("📝 Enter the additional information needed: ").strip()
+            if not detail_request:
+                print("⚠️ Detail request cannot be empty.")
+                return
             authority.request_details(complaint, detail_request)
             print("🔔 Request for more details has been sent.")
         else:
-            print("❌ Invalid choice. Please try again.")
+            print("❌ Invalid choice. Please select a valid complaint number.")
     except ValueError:
         print("❌ Invalid input. Please enter a valid number.")
+    except Exception as e:
+        print(f"🚫 An unexpected error occurred: {e}")
 
 def handle_resolve_complaint(authority):
     if not authority.assigned_complaints:
@@ -801,21 +859,32 @@ def handle_resolve_complaint(authority):
     except ValueError:
         print("❌ Invalid input. Please enter a valid number.")
 
-def handle_reject_complaint(authority: Authority):
+def handle_reject_complaint(authority):
     if not authority.assigned_complaints:
         print("❌ No assigned complaints to reject.")
         return
 
+    print("\n📋 Assigned Complaints:")
     for idx, complaint in enumerate(authority.assigned_complaints, 1):
         print(f"{idx}. 🆔 {complaint.get_complaint_id()} | {complaint.title} | Status: {complaint.status}")
 
     try:
-        choice = int(input("Enter the complaint number to reject: ")) - 1
-        complaint = authority.assigned_complaints[choice]
-        reason = input("Enter the reason for rejection: ").strip()
-        authority.reject_complaint(complaint, reason)
-    except (ValueError, IndexError):
-        print("❌ Invalid input.")
+        choice_input = input("👉 Enter the complaint number to reject: ").strip()
+        choice = int(choice_input) - 1
+        if 0 <= choice < len(authority.assigned_complaints):
+            complaint = authority.assigned_complaints[choice]
+            reason = input("📝 Enter the reason for rejection: ").strip()
+            if not reason:
+                print("⚠️ Rejection reason cannot be empty.")
+                return
+            authority.reject_complaint(complaint, reason)
+            print("🚫 Complaint rejected successfully.")
+        else:
+            print("❌ Invalid choice. Please select a valid complaint number.")
+    except ValueError:
+        print("❌ Invalid input. Please enter a valid number.")
+    except Exception as e:
+        print(f"🚫 An unexpected error occurred: {e}")
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')

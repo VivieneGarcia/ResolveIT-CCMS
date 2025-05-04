@@ -1,7 +1,14 @@
-from main import Resident, Testing, CATEGORIES
+from main import Resident, Testing, CATEGORIES, Authority, Complaint
+import datetime
 
 test_user = Resident(user_id=0, name="Viviene", email="vivs@gmail.com", password="vivi")
 Test = Testing(test_user)
+
+
+# Create a test authority (with complaints assigned)
+test_authority = Authority(user_id=3, name="Princess", email="princess@gmail.com", password="princess")
+# Create a test authority (without complaints assigned)
+test_authority  = Testing(test_authority )
 
 def run_test_cases(label, test_cases, method):
     print(f"\nRunning tests for '{label}'...\n")
@@ -93,7 +100,64 @@ def test_edit_complaint():
     ]
     run_test_cases("Edit Complaint", test_cases, Test.test_edit_complaint)
 
+def test_resolve_complaint():
+    test_cases = [
+        # Happy Path: Complaint resolved
+        {
+            "input": {"complaint_number": 3},
+            "expected": "✅ Complaint resolved successfully."
+        },
+        # Invalid complaint number
+        {
+            "input": {"complaint_number": 999},
+            "expected": "❌ Invalid selection. Please try again."
+        }
+    ]
+    run_test_cases("Resolve Complaint", test_cases, test_authority.handle_resolve_complaint)
+
+def test_reject_complaint():
+    test_cases = [
+        # Happy Path: Complaint rejected
+        {
+            "input": {"complaint_number": 3, "rejection_reason": "Invalid claim."},
+            "expected": "🚫 Complaint rejected successfully."
+        },
+        # Invalid complaint number
+        {
+            "input": {"complaint_number": 999, "rejection_reason": "Invalid claim."},
+            "expected": "❌ Invalid choice. Please select a valid complaint number."
+        },
+        # Empty rejection reason
+        {
+            "input": {"complaint_number":3, "rejection_reason": ""},
+            "expected": "⚠️ Rejection reason cannot be empty."
+        }
+    ]
+    run_test_cases("Reject Complaint", test_cases, test_authority.handle_reject_complaint)
+
+def test_request_details():
+    test_cases = [
+        # Happy Path
+        {
+            "input": {"authority": test_authority.user, "complaint_number": 1, "detail_request": "Please provide a photo of the issue."},
+            "expected": "🔔 Request for more details has been sent."
+        },
+        # Invalid complaint number
+        {
+            "input": {"authority": test_authority.user, "complaint_number": 999, "detail_request": "Need location update."},
+            "expected": "❌ Invalid choice. Please select a valid complaint number."
+        },
+        # Empty detail request
+        {
+            "input": {"authority": test_authority.user, "complaint_number": 1, "detail_request": ""},
+            "expected": "⚠️ Detail request cannot be empty."
+        }
+    ]
+    run_test_cases("Request Details", test_cases, test_authority.handle_request_details)
 
 if __name__ == "__main__":
     test_submit_complaint()
     test_edit_complaint()
+    test_resolve_complaint()
+    test_reject_complaint()
+    test_request_details()
