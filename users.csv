@@ -2,4 +2,4 @@ username,user_id,name,email,role,password
 Vivs,1,Viviene Garcia,vivs@gmail.com,Resident,vivi
 Mara,2,Mara J,mara@gmail.com,Administrator,mara
 Princess,3,Princess M,princess@gmail.com,Authority,princess
-newuser,4,John Doe,john.doe@example.com,Resident,password123
+
