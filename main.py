@@ -12,6 +12,29 @@ CATEGORIES = {
     "6": "💡 Street Light",
     "7": "❓ Other"
 }
+class Testing_Register:
+    def __init__(self):
+        self.users_db = CSVManager.load_users()
+        self.next_user_id = max((u.get_user_id() for u in self.users_db.values()), default=0) + 1
+
+    def simulate_register(self, username, role, full_name, email, password):
+        print("\n🌟 Running test for 'User Registration'...")
+
+        if username in self.users_db:
+            print("❌ Username already exists. Registration failed.")
+            return "Username already exists"
+
+        if role not in ["Resident", "Administrator", "Authority"]:
+            print("❌ Invalid role. Registration failed.")
+            return "Invalid role"
+
+        user = User.register(self.next_user_id, username, full_name, email, role, password, self.users_db)
+        if user:
+            self.next_user_id += 1
+            print("✅ Registration successful!")
+            return "Registration successful"
+
+        return "Registration failed"
 
 class Testing:
     def __init__(self, user):
@@ -84,53 +107,50 @@ class Testing:
         
         return "✅ Complaint updated successfully"
 
-    def handle_resolve_complaint(self,complaint_number):
-        for user in users_db.values():
-            user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
-
-        if not user.assigned_complaints:
+    def test_resolve_complaint(self, complaint_number):
+        assigned_complaints = [c for c in CSVManager.load_complaints() if c.assigned_authority_id == self.user.get_user_id()]
+        
+        if not assigned_complaints:
             return "📭 No assigned complaints to resolve."
 
         index = complaint_number - 1
-        if 0 <= index < len(user.assigned_complaints):
-            complaint = user.assigned_complaints[index]
-            user.resolve_complaint(complaint)
+        if 0 <= index < len(assigned_complaints):
+            complaint = assigned_complaints[index]
+            self.user.resolve_complaint(complaint)
             return "✅ Complaint resolved successfully."
         else:
             return "❌ Invalid selection. Please try again."
 
-    def handle_reject_complaint(self, complaint_number, rejection_reason):
-        for user in users_db.values():
-            user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
-        if not user.assigned_complaints:
+
+    def test_reject_complaint(self, complaint_number, rejection_reason):
+        assigned_complaints = [c for c in CSVManager.load_complaints() if c.assigned_authority_id == self.user.get_user_id()]
+        
+        if not assigned_complaints:
             return "❌ No assigned complaints to reject."
 
         index = complaint_number - 1
-        if 0 <= index < len(user.assigned_complaints):
-            if not rejection_reason:
+        if 0 <= index < len(assigned_complaints):
+            if not rejection_reason.strip():
                 return "⚠️ Rejection reason cannot be empty."
-            complaint = user.assigned_complaints[index]
-            user.reject_complaint(complaint, rejection_reason)
+            complaint = assigned_complaints[index]
+            self.user.reject_complaint(complaint, rejection_reason)
             return "🚫 Complaint rejected successfully."
         else:
             return "❌ Invalid choice. Please select a valid complaint number."
 
-    def handle_request_details(self, authority, complaint_number, detail_request):
-        for user in users_db.values():
-            if isinstance(user, Resident):
-                user.complaints = [c for c in all_complaint if c.get_user_id() == user.get_user_id()]
-            if isinstance(user, Authority):
-                user.assigned_complaints = [c for c in all_complaint if c.assigned_authority_id == user.get_user_id()]
 
-        if not user.assigned_complaints:
+    def test_request_details(self, complaint_number, detail_request):
+        assigned_complaints = [c for c in CSVManager.load_complaints() if c.assigned_authority_id == self.user.get_user_id()]
+        
+        if not assigned_complaints:
             return "📭 No assigned complaints to request details for."
 
         index = complaint_number - 1
-        if 0 <= index < len(user.assigned_complaints):
-            if not detail_request:
+        if 0 <= index < len(assigned_complaints):
+            if not detail_request.strip():
                 return "⚠️ Detail request cannot be empty."
-            complaint = user.assigned_complaints[index]
-            user.request_details(complaint, detail_request)
+            complaint = assigned_complaints[index]
+            self.user.request_details(complaint, detail_request)
             return "🔔 Request for more details has been sent."
         else:
             return "❌ Invalid choice. Please select a valid complaint number."
@@ -303,7 +323,6 @@ class User:
 
         return user
 
-
 class Resident(User):
     def __init__(self, user_id, name, email, password):
         super().__init__(user_id, name, email, "Resident", password)
@@ -371,12 +390,11 @@ class Administrator(User):
 
         NotificationManager.send_notification(sender_id=self.get_user_id(), recipient_id=authority.get_user_id(),  
         message=f"New complaint (Title: {complaint.title.title()}) assigned to you."
-   )
+        )
 
         NotificationManager.send_notification(sender_id=authority.get_user_id(), recipient_id=complaint.get_user_id(),
             message=f"Your complaint (Title: {complaint.title.title()}) has been assigned to an authority."
         )
-
 
         CSVManager.update_complaint_in_csv(complaint)
 
